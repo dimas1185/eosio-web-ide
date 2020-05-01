@@ -63,6 +63,52 @@ BOOST_AUTO_TEST_CASE(post) try {
             );
         }(),
         fc::exception);
+
+    t.push_action(
+        N(talk), N(like), N(john),
+        mutable_variant_object       //
+        ("id", 2)               //
+        ("user", "john")             //
+    );
+
+    t.push_action(
+        N(talk), N(like), N(jane),
+        mutable_variant_object       //
+        ("id", 2)               //
+        ("user", "jane")             //
+    );
+
+    //unlike as it was liked before
+    //t.push_action(
+    //    N(talk), N(like), N(jane),
+    //    mutable_variant_object       //
+    //    ("id", 2)               //
+    //    ("user", "jane")             //
+    //);
+
+    // Can't like as other user
+    BOOST_CHECK_THROW(
+        [&] {
+            t.push_action(
+                N(talk), N(like), N(john),
+                mutable_variant_object       //
+                ("id", 2)                    //
+                ("user", "jane")             //
+            );
+        }(),
+        fc::exception);
+
+    // Can't like non existing post
+    BOOST_CHECK_THROW(
+        [&] {
+            t.push_action(
+                N(talk), N(like), N(john),
+                mutable_variant_object       //
+                ("id", 4)                    //
+                ("user", "john")             //
+            );
+        }(),
+        fc::exception);
 }
 FC_LOG_AND_RETHROW()
 

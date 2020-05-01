@@ -11,8 +11,30 @@ struct [[eosio::table("message"), eosio::contract("talk")]] message {
     uint64_t get_reply_to() const { return reply_to; }
 };
 
+static uint128_t getLikeKey(uint64_t id, const eosio::name& user)
+{
+    uint128_t temp;
+    temp = id;
+    temp = temp << 64;
+    return temp | user.value;
+};
+
+// Like table
+struct [[eosio::table("like"), eosio::contract("talk")]] like {
+    uint64_t    id  = {}; // Non-0
+    eosio::name user     = {};
+
+    uint128_t primary_key() const 
+    {
+        return getLikeKey(id, user);
+    }
+};
+
 using message_table = eosio::multi_index<
     "message"_n, message, eosio::indexed_by<"by.reply.to"_n, eosio::const_mem_fun<message, uint64_t, &message::get_reply_to>>>;
+
+using like_table = eosio::multi_index<
+    "like"_n, like, eosio::indexed_by<"by.post.id"_n, eosio::const_mem_fun<like, uint128_t, &like::primary_key>>>;
 
 // The contract
 class talk : eosio::contract {
@@ -43,5 +65,30 @@ class talk : eosio::contract {
             message.user     = user;
             message.content  = content;
         });
+    }
+
+    // Post a like
+    [[eosio::action]] void like(uint64_t id, eosio::name user) {
+        like_table likes{get_self(), 0};
+        message_table messages{get_self(), 0};
+
+        // Check user
+        require_auth(user);
+        //check if post exists
+        messages.get(id);
+
+        uint128_t like_key = getLikeKey(id, user);
+        auto it = likes.find(like_key);
+        //if post was liked than unlike it
+        if (it != likes.end())
+            likes.erase(it);
+        else
+        {
+            // Record the message
+            likes.emplace(get_self(), [&](auto& like) {
+                like.id       = id;
+                like.user     = user;
+            });
+        }
     }
 };
