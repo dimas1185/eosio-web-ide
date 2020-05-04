@@ -6,6 +6,7 @@ struct [[eosio::table("message"), eosio::contract("talk")]] message {
     uint64_t    reply_to = {}; // Non-0 if this is a reply
     eosio::name user     = {};
     std::string content  = {};
+    uint32_t    likes    = {};
 
     uint64_t primary_key() const { return id; }
     uint64_t get_reply_to() const { return reply_to; }
@@ -64,6 +65,7 @@ class talk : eosio::contract {
             message.reply_to = reply_to;
             message.user     = user;
             message.content  = content;
+            message.likes    = 0;
         });
     }
 
@@ -75,7 +77,8 @@ class talk : eosio::contract {
         // Check user
         require_auth(user);
         //check if post exists
-        messages.get(id);
+        auto it_m = messages.find(id);
+        eosio::check(it_m != messages.end(), "Message not found.");
 
         uint128_t like_key = getLikeKey(id, user);
         auto it = likes.find(like_key);
@@ -83,6 +86,9 @@ class talk : eosio::contract {
         if (it != likes.end())
         {
             likes.erase(it);
+            messages.modify(it_m, user, [&]( auto& message ) {
+                message.likes = message.likes - 1;
+            });
             eosio::print("post ", id, " was unliked by ", user);
         }
         else
@@ -91,6 +97,9 @@ class talk : eosio::contract {
             likes.emplace(get_self(), [&](auto& like) {
                 like.id       = id;
                 like.user     = user;
+            });
+            messages.modify(it_m, user, [&]( auto& message ) {
+                message.likes = message.likes + 1;
             });
             eosio::print("post ", id, " was liked by ", user);
         }
