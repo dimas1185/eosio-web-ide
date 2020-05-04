@@ -64,6 +64,7 @@ BOOST_AUTO_TEST_CASE(post) try {
         }(),
         fc::exception);
 
+    //1-st like
     t.push_action(
         N(talk), N(like), N(john),
         mutable_variant_object       //
@@ -71,11 +72,20 @@ BOOST_AUTO_TEST_CASE(post) try {
         ("user", "john")             //
     );
 
+    //2-nd like
     t.push_action(
         N(talk), N(like), N(jane),
         mutable_variant_object       //
         ("id", 2)               //
         ("user", "jane")             //
+    );
+
+    //verify we have 2 likes for post 2
+    t.push_action(
+        N(talk), N(verifylikes), N(jane),
+        mutable_variant_object       //
+        ("id", 2)               //
+        ("num", 2)             //
     );
 
     //unlike as it was liked before
@@ -106,6 +116,18 @@ BOOST_AUTO_TEST_CASE(post) try {
                 mutable_variant_object       //
                 ("id", 4)                    //
                 ("user", "john")             //
+            );
+        }(),
+        fc::exception);
+    
+    //invalid likes number
+    BOOST_CHECK_THROW(
+        [&] {
+            t.push_action(
+                N(talk), N(verifylikes), N(john),
+                mutable_variant_object       //
+                ("id", 2)                    //
+                ("num", 3)             //
             );
         }(),
         fc::exception);

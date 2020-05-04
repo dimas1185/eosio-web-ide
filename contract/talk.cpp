@@ -104,4 +104,9 @@ class talk : eosio::contract {
             eosio::print("post ", id, " was liked by ", user);
         }
     }
+
+    [[eosio::action]] void verifylikes(uint64_t id, uint32_t num) {
+        message_table table{get_self(), 0};
+        eosio::check(table.get(id).likes == num, "Invalid likes number");
+    }
 };
