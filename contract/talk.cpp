@@ -81,7 +81,10 @@ class talk : eosio::contract {
         auto it = likes.find(like_key);
         //if post was liked than unlike it
         if (it != likes.end())
+        {
             likes.erase(it);
+            eosio::print("post ", id, " was unliked by ", user);
+        }
         else
         {
             // Record the message
@@ -89,6 +92,7 @@ class talk : eosio::contract {
                 like.id       = id;
                 like.user     = user;
             });
+            eosio::print("post ", id, " was liked by ", user);
         }
     }
 };
